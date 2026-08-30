@@ -1,0 +1,29 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Build Hollow",
+            "type": "shell",
+            "command": "C:/msys64/ucrt64/bin/g++.exe",
+            "args": [
+                "-o", "${workspaceFolder}/hollow.exe",
+                "${workspaceFolder}/hollow.cpp",
+                "${workspaceFolder}/evasion.cpp",
+                "${workspaceFolder}/syscalls.cpp",
+                "${workspaceFolder}/utils.cpp",
+                "-municode",
+                "'-Wl,-subsystem,console'", // FIXED: Added single quotes to bypass PowerShell array splitting
+                "-O2",
+                "-std=c++17",
+                "-static",
+                "-fno-exceptions",
+                "-fno-rtti"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": "$gcc"
+        }
+    ]
+}
