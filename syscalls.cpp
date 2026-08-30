@@ -1,7 +1,7 @@
 #include <windows.h>
 #include <winternl.h>
 
-// Direct external linkage signatures to block name scrambling
+
 extern "C" {
 
     NTSTATUS NtCreateProcessEx(PHANDLE ProcessHandle, ACCESS_MASK DesiredAccess, POBJECT_ATTRIBUTES ObjectAttributes, HANDLE ParentProcess, ULONG Flags, HANDLE SectionHandle, HANDLE DebugPort, HANDLE ExceptionPort, ULONG JobMemberLevel) {
