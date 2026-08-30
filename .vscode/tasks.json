@@ -12,7 +12,7 @@
                 "${workspaceFolder}/syscalls.cpp",
                 "${workspaceFolder}/utils.cpp",
                 "-municode",
-                "'-Wl,-subsystem,console'", // FIXED: Added single quotes to bypass PowerShell array splitting
+                "'-Wl,-subsystem,console'", 
                 "-O2",
                 "-std=c++17",
                 "-static",
