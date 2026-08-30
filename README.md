@@ -2,16 +2,13 @@
 
 ## Direct Syscall Remote Thread Injector
 
-Windows x64 process-injection loader designed for **offensive security operations and adversary simulation**.
+Windows x64 process-injection loader designed for **offensive security operations, adversary simulation, and EDR telemetry subversion**.
 
-### Features
+### Evasion Vector Breakdown
 
-* Direct x64 system calls
-* User-mode security hook avoidance
-* Cross-process memory operations
-* Staged `RW → RX` memory protection
-* `NtCreateThreadEx` remote thread execution
-* Runtime XOR payload decoding
+* **User-Mode Hook Subversion (Elastic EDR Bypass):** Bypasses the user-mode monitoring hooks deployed by modern security agents within `ntdll.dll`. The code skips user-mode API logging and redirection by mapping direct inline assembly stubs via an `extern "C"` linkage envelope to communicate straight with the kernel boundary.
+* **Persistent Signature Evasion:** Avoids the noisy fingerprint of persistent Read/Write/Execute (`RWX`) allocations. Memory regions are strictly initialized as safe Read/Write (`PAGE_READWRITE`), populated with the payload stream, and dynamically flipped to Execute/Read (`PAGE_EXECUTE_READ`) via `VirtualProtectEx` only at the millisecond of execution.
+* **Heuristic Behavior Subversion:** Avoids process hollowing loops and thread-context hijacking sequences (`NtGetContextThread` / `NtSetContextThread`), which Elastic's behavioral heuristics track heavily. The target primary thread remains untouched, spawning code execution inside an isolated runtime background thread via a raw `NtCreateThreadEx` system call.
 
 ---
 
@@ -25,7 +22,7 @@ flowchart TD
     D --> E[NtAllocateVirtualMemory]
     E --> F[PAGE_READWRITE]
     F --> G[NtWriteVirtualMemory]
-    G --> H[NtProtectVirtualMemory]
+    G --> H[VirtualProtectEx]
     H --> I[PAGE_EXECUTE_READ]
     I --> J[NtCreateThreadEx]
     J --> K[Payload Execution]
@@ -33,11 +30,11 @@ flowchart TD
 
 ---
 
-## Red Team Use
+## Red Team Use & Telemetry Validation
 
 * Process injection during adversary simulation
 * User-mode security instrumentation testing
-* EDR detection validation
+* EDR detection and hook validation (Tested against Elastic EDR)
 * Memory and thread telemetry assessment
 * Process-injection technique comparison
 
@@ -55,15 +52,13 @@ flowchart TD
 Build using the MSYS2 UCRT64 environment:
 
 ```bash
-g++ -o hollow.exe hollow.cpp evasion.cpp syscalls.cpp utils.cpp \
-    -O2 -std=c++17 -static -fno-exceptions -fno-rtti
+g++ -o hollow.exe hollow.cpp evasion.cpp syscalls.cpp utils.cpp -municode -Wl,-subsystem,console -O2 -std=c++17 -static -fno-exceptions -fno-rtti
 ```
 
 ### Cross Compilation
 
 ```bash
-x86_64-w64-mingw32-g++ -o hollow.exe hollow.cpp evasion.cpp syscalls.cpp utils.cpp \
-    -O2 -std=c++17 -static -fno-exceptions -fno-rtti
+x86_64-w64-mingw32-g++ -o hollow.exe hollow.cpp evasion.cpp syscalls.cpp utils.cpp -municode '-Wl,-subsystem,console' -O2 -std=c++17 -static -fno-exceptions -fno-rtti
 ```
 
 ---
@@ -97,6 +92,12 @@ flowchart LR
 hollow.exe --target <target_process> --payload <encoded_payload>
 ```
 
+Example:
+
+```text
+.\hollow.exe --target C:\Windows\System32\notepad.exe --payload enc.bin
+```
+
 ---
 
 ## Project Structure
@@ -105,13 +106,13 @@ hollow.exe --target <target_process> --payload <encoded_payload>
 Evasion/
 │
 ├── hollow.cpp
+├── hollow.h
 ├── evasion.cpp
+├── evasion.h
 ├── syscalls.cpp
 ├── syscalls.h
 ├── utils.cpp
-├── payload/
-│   └── ...
-│
+├── config.h
 ├── .gitignore
 └── README.md
 ```
@@ -129,4 +130,6 @@ Execution : NtCreateThreadEx
 Payload   : Runtime XOR Decoding
 ```
 
-> **Scope:** Intended for controlled security testing, adversary simulation, and authorized environments.
+---
+
+> Disclaimer: This repository is intended strictly for professional security research, educational telemetry validation, and authorized academic laboratory tracking purposes.
