@@ -2,13 +2,19 @@
 
 ## Direct Syscall Remote Thread Injector
 
-Windows x64 process-injection loader designed for **offensive security operations, adversary simulation, and EDR telemetry subversion**.
+Windows x64 process-injection loader designed for advanced offensive security operations, custom adversary simulation, and user-mode endpoint instrumentation subversion.
+
+### Operational Security Reality (Read Before Deployment)
+
+This framework is engineered to subvert **runtime behavioral heuristics and user-mode EDR hook telemetry**. Testing confirms complete subversion of Elastic EDR runtime hooks during the cross-process injection and thread invocation phases. 
+
+However, because this loader relies on clean Win32/NT system structures, compiling using generic cross-compilers (like Linux MinGW-w64) leaves static binary footprint headers that modern **Kernel-Mode File-System Mini-Filter Drivers** flag instantly upon storage write. To successfully deploy this framework past static file-system signature filters without breaking code integrity, **native compilation on a localized toolchain (MSYS2 UCRT64) or memory-only text packaging pipelines must be utilized.**
 
 ### Evasion Vector Breakdown
 
-* **User-Mode Hook Subversion (Elastic EDR Bypass):** Bypasses the user-mode monitoring hooks deployed by modern security agents within `ntdll.dll`. The code skips user-mode API logging and redirection by mapping direct inline assembly stubs via an `extern "C"` linkage envelope to communicate straight with the kernel boundary.
+* **User-Mode Hook Subversion (Elastic EDR Hook Bypass):** Bypasses the active monitoring hooks deployed within `ntdll.dll`. The code skips user-mode API logging and redirection by mapping direct inline assembly stubs via an `extern "C"` linkage envelope to communicate straight with the kernel boundary.
 * **Persistent Signature Evasion:** Avoids the noisy fingerprint of persistent Read/Write/Execute (`RWX`) allocations. Memory regions are strictly initialized as safe Read/Write (`PAGE_READWRITE`), populated with the payload stream, and dynamically flipped to Execute/Read (`PAGE_EXECUTE_READ`) via `VirtualProtectEx` only at the millisecond of execution.
-* **Heuristic Behavior Subversion:** Avoids process hollowing loops and thread-context hijacking sequences (`NtGetContextThread` / `NtSetContextThread`), which Elastic's behavioral heuristics track heavily. The target primary thread remains untouched, spawning code execution inside an isolated runtime background thread via a raw `NtCreateThreadEx` system call.
+* **Heuristic Behavior Subversion:** Avoids process hollowing loops and thread-context hijacking sequences (`NtGetContextThread` / `NtSetContextThread`), which modern behavioral engines heavily track. The target primary thread remains untouched, spawning code execution inside an isolated runtime background thread via a raw `NtCreateThreadEx` system call.
 
 ---
 
@@ -32,30 +38,29 @@ flowchart TD
 
 ## Red Team Use & Telemetry Validation
 
-* Process injection during adversary simulation
-* User-mode security instrumentation testing
-* EDR detection and hook validation (Tested against Elastic EDR)
-* Memory and thread telemetry assessment
-* Process-injection technique comparison
+* Cross-process memory mapping via native unhooked syscall channels.
+* Validating endpoint behavioral rules against independent remote threads.
+* Benchmarking host memory scanners against dynamic page protection swaps.
+* Tested and validated successful memory execution against Elastic EDR.
 
 ---
 
 ## Build Requirements
 
-* Windows x64
-* C++17-compatible compiler
-* MSYS2 UCRT64 / MinGW-w64
+* Windows x64 Natively
+* C++17 ISO Standard (`-std=c++17`)
+* MSYS2 UCRT64 Environment (Enforces unique machine signatures)
 * Python 3.x
 
-### Windows
+### Native Windows Compilation (Recommended for EDR Evasion)
 
-Build using the MSYS2 UCRT64 environment:
+Build natively inside your target workstation MSYS2 UCRT64 shell:
 
 ```bash
 g++ -o injector.exe injector.cpp evasion.cpp syscalls.cpp utils.cpp -municode -Wl,-subsystem,console -O2 -std=c++17 -static -fno-exceptions -fno-rtti
 ```
 
-### Cross Compilation
+### Cross Compilation (Requires Asset Base64/Obfuscation Packaging)
 
 ```bash
 x86_64-w64-mingw32-g++ -o injector.exe injector.cpp evasion.cpp syscalls.cpp utils.cpp -municode '-Wl,-subsystem,console' -O2 -std=c++17 -static -fno-exceptions -fno-rtti
@@ -63,17 +68,13 @@ x86_64-w64-mingw32-g++ -o injector.exe injector.cpp evasion.cpp syscalls.cpp uti
 
 ---
 
-## Payload
+## Payload Workflow
 
-The loader accepts an externally prepared raw Windows x64 payload.
-
-The current encoding mechanism uses:
+The loader expects an externally obfuscated stageless payload stream.
 
 ```text
 XOR Key: 0xAA
 ```
-
-Payload workflow:
 
 ```mermaid
 flowchart LR
@@ -89,7 +90,7 @@ flowchart LR
 ## Usage
 
 ```text
-injector.exe --target <target_process> --payload <encoded_payload>
+injector.exe --target <target_process_path> --payload <encoded_payload_path>
 ```
 
 Example:
@@ -119,15 +120,15 @@ Evasion/
 
 ---
 
-## Classification
+## Technical Classification
 
 ```text
 Platform  : Windows x64
 Technique : Remote Thread Process Injection
-Syscalls  : Direct Native System Calls
-Memory    : RW → RX
-Execution : NtCreateThreadEx
-Payload   : Runtime XOR Decoding
+Syscalls  : Direct Native System Calls (Inline Assembly)
+Memory    : RW → RX Protective State Transition
+Execution : NtCreateThreadEx (Isolated Thread Context)
+Payload   : Runtime In-Memory XOR Stream Decoding (0xAA)
 ```
 
 ---
