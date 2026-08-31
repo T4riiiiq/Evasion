@@ -52,13 +52,13 @@ flowchart TD
 Build using the MSYS2 UCRT64 environment:
 
 ```bash
-g++ -o hollow.exe hollow.cpp evasion.cpp syscalls.cpp utils.cpp -municode -Wl,-subsystem,console -O2 -std=c++17 -static -fno-exceptions -fno-rtti
+g++ -o injector.exe injector.cpp evasion.cpp syscalls.cpp utils.cpp -municode -Wl,-subsystem,console -O2 -std=c++17 -static -fno-exceptions -fno-rtti
 ```
 
 ### Cross Compilation
 
 ```bash
-x86_64-w64-mingw32-g++ -o hollow.exe hollow.cpp evasion.cpp syscalls.cpp utils.cpp -municode '-Wl,-subsystem,console' -O2 -std=c++17 -static -fno-exceptions -fno-rtti
+x86_64-w64-mingw32-g++ -o injector.exe injector.cpp evasion.cpp syscalls.cpp utils.cpp -municode '-Wl,-subsystem,console' -O2 -std=c++17 -static -fno-exceptions -fno-rtti
 ```
 
 ---
@@ -89,13 +89,13 @@ flowchart LR
 ## Usage
 
 ```text
-hollow.exe --target <target_process> --payload <encoded_payload>
+injector.exe --target <target_process> --payload <encoded_payload>
 ```
 
 Example:
 
 ```text
-.\hollow.exe --target C:\Windows\System32\notepad.exe --payload enc.bin
+.\injector.exe --target C:\Windows\System32\notepad.exe --payload enc.bin
 ```
 
 ---
@@ -105,8 +105,8 @@ Example:
 ```text
 Evasion/
 │
-├── hollow.cpp
-├── hollow.h
+├── injector.cpp
+├── injector.h
 ├── evasion.cpp
 ├── evasion.h
 ├── syscalls.cpp

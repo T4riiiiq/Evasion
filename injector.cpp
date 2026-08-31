@@ -1,4 +1,4 @@
-#include "hollow.h"
+#include "injector.h"
 #include "evasion.h"
 #include "syscalls.h"
 #include "config.h"
